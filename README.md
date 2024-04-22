@@ -1,4 +1,534 @@
-# Consultas sobre una tabla
+# Normalización Base de datos
+
+![alt text](image.png)
+
+## Comandos DDL
+
+```sql
+
+CREATE TABLE pais (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(60) NOT NULL
+);
+
+CREATE TABLE region (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(60) NOT NULL,
+    id_pais INT NOT NULL,
+    CONSTRAINT FK_id_pais_region FOREIGN KEY (id_pais)
+        REFERENCES pais (id)
+);
+
+CREATE TABLE ciudad (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(60) NOT NULL,
+    id_region INT NOT NULL,
+    CONSTRAINT FK_id_region FOREIGN KEY (id_region)
+        REFERENCES region (id)
+);
+
+CREATE TABLE oficina (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(60) NOT NULL,
+    id_ciudad INT NOT NULL,
+    codigo_postal SMALLINT NOT NULL,
+    CONSTRAINT FK_ciudad FOREIGN KEY (id_ciudad)
+        REFERENCES ciudad (id)
+);
+
+CREATE TABLE empleado (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL,
+    apellido1 VARCHAR(50) NOT NULL,
+    apellido2 VARCHAR(50),
+    extension VARCHAR(10) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    id_oficina INT,
+    id_jefe INT NOT NULL,
+    id_puesto_empleado SMALLINT,
+    CONSTRAINT FK_id_jefe FOREIGN KEY (id_jefe)
+        REFERENCES empleado (id),
+    CONSTRAINT FK_id_puesto_empleado FOREIGN KEY (id_puesto_empleado)
+        REFERENCES puesto_empleado (id),
+    CONSTRAINT FK_oficina FOREIGN KEY (id_oficina)
+        REFERENCES oficina (id)
+);
+
+CREATE TABLE cliente (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL,
+    id_ciudad INT NOT NULL,
+    id_empleado_rep_ventas INT,
+    limite_credito DOUBLE,
+    CONSTRAINT FK_id_ciudad FOREIGN KEY (id_ciudad)
+        REFERENCES ciudad (id),
+    CONSTRAINT FK_id_empleado_rep_ventas FOREIGN KEY (id_empleado_rep_ventas)
+        REFERENCES empleado (id)
+);
+
+CREATE TABLE contacto (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(30) NOT NULL,
+    apellido VARCHAR(30) NOT NULL,
+    id_cliente INT NOT NULL,
+    CONSTRAINT FK_id_cliente FOREIGN KEY (id_cliente)
+        REFERENCES cliente (id)
+);
+
+CREATE TABLE producto (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(255) NOT NULL,
+    id_gama_producto SMALLINT NOT NULL,
+    dimensiones VARCHAR(25),
+    id_proveedor_producto INT,
+    descripcion TEXT,
+    cantidad_stock SMALLINT NOT NULL,
+    precio_venta DOUBLE NOT NULL,
+    precio_proveedor DOUBLE,
+    CONSTRAINT FK_id_gama_producto_producto FOREIGN KEY (id_gama_producto)
+        REFERENCES gama_producto (id)
+);
+
+CREATE TABLE pedido (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    fecha_pedido DATE NOT NULL,
+    fecha_esperada DATE NOT NULL,
+    fecha_entrega DATE,
+    id_estado SMALLINT NOT NULL,
+    comentarios TEXT,
+    CONSTRAINT FK_id_estado_pedido FOREIGN KEY (id_estado)
+        REFERENCES estado_pedido (id)
+);
+
+CREATE TABLE gama_producto (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    descripcion_texto TEXT,
+    descripcion_html TEXT,
+    imagen VARCHAR(256)
+);
+
+CREATE TABLE estado_pedido (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE proveedor (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(60) NOT NULL,
+    telefono BIGINT NOT NULL,
+    direccion VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE proveedor_producto (
+    id_proveedor INT,
+    id_producto INT,
+    PRIMARY KEY (id_proveedor, id_producto),
+    CONSTRAINT FK_id_proveedor_proveedor FOREIGN KEY (id_proveedor)
+        REFERENCES proveedor (id),
+    CONSTRAINT FK_id_producto_proveedor FOREIGN KEY (id_producto)
+        REFERENCES producto (id)
+);
+
+CREATE TABLE puesto_empleado (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE forma_pago (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE forma_pago_cliente (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_cliente INT,
+    id_forma_pago INT,
+    UNIQUE KEY (id_cliente, id_forma_pago), 
+    CONSTRAINT FK_id_cliente_forma_pago FOREIGN KEY (id_cliente)
+        REFERENCES cliente (id),
+    CONSTRAINT FK_id_forma_pago FOREIGN KEY (id_forma_pago)
+        REFERENCES forma_pago (id)
+);
+
+CREATE TABLE detalle_pedido (
+    id_pedido SMALLINT NOT NULL,
+    id_producto SMALLINT NOT NULL,
+    cantidad NUMERIC NOT NULL,
+    precio_unidad DOUBLE NOT NULL,
+    numero_linea SMALLINT NOT NULL,
+    PRIMARY KEY (id_pedido, id_producto),
+    CONSTRAINT FK_id_pedido FOREIGN KEY (id_pedido)
+        REFERENCES pedido (id),
+    CONSTRAINT FK_producto FOREIGN KEY (id_producto)
+        REFERENCES producto (id)
+);
+
+CREATE TABLE pago_pedido (
+    id_pedido SMALLINT NOT NULL,
+    id_forma_pago_cliente INT NOT NULL,
+    fecha_pago DATE NOT NULL,
+    total NUMERIC(25, 0) NOT NULL,
+    PRIMARY KEY (id_pedido, id_forma_pago_cliente),
+    CONSTRAINT FK_id_pedido_pago FOREIGN KEY (id_pedido)
+        REFERENCES pedido (id),
+    CONSTRAINT FK_id_forma_pago_cliente_pago FOREIGN KEY (id_forma_pago_cliente)
+        REFERENCES forma_pago_cliente (id)
+);
+
+CREATE TABLE direccion_cliente (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_cliente INT NOT NULL,
+    direccion VARCHAR(50) NOT NULL,
+    codigo_postal VARCHAR(10),
+    CONSTRAINT FK_id_cliente_direccion FOREIGN KEY (id_cliente)
+        REFERENCES cliente (id)
+);
+
+CREATE TABLE direccion_oficina (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_oficina INT NOT NULL,
+    direccion VARCHAR(50) NOT NULL,
+    CONSTRAINT FK_id_oficina_direccion FOREIGN KEY (id_oficina)
+        REFERENCES oficina (id)
+);
+
+CREATE TABLE telefono_cliente (
+    id_tipo_telefono SMALLINT NOT NULL,
+    id_cliente INT NOT NULL,
+    PRIMARY KEY (id_tipo_telefono, id_cliente),
+    CONSTRAINT FK_id_tipo_telefono_cliente FOREIGN KEY (id_tipo_telefono)
+        REFERENCES tipo_telefono (id),
+    CONSTRAINT FK_id_cliente_telefono FOREIGN KEY (id_cliente)
+        REFERENCES cliente (id)
+);
+
+CREATE TABLE telefono_contacto (
+    id_tipo_telefono SMALLINT NOT NULL,
+    id_contacto INT NOT NULL,
+    numero SMALLINT NOT NULL,
+    PRIMARY KEY (id_tipo_telefono, id_contacto),
+    CONSTRAINT FK_id_tipo_telefono_contacto FOREIGN KEY (id_tipo_telefono)
+        REFERENCES tipo_telefono (id),
+    CONSTRAINT FK_id_contacto_telefono FOREIGN KEY (id_contacto)
+        REFERENCES contacto (id)
+);
+
+CREATE TABLE telefono_oficina (
+    id_tipo_telefono SMALLINT NOT NULL,
+    id_oficina INT NOT NULL,
+    numero SMALLINT NOT NULL,
+    PRIMARY KEY (id_tipo_telefono, id_oficina),
+    CONSTRAINT FK_id_tipo_telefono_oficina FOREIGN KEY (id_tipo_telefono)
+        REFERENCES tipo_telefono (id),
+    CONSTRAINT FK_id_oficina_telefono FOREIGN KEY (id_oficina)
+        REFERENCES oficina (id)
+);
+
+CREATE TABLE tipo_telefono (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tipo VARCHAR(50) NOT NULL
+);
+
+```
+
+## Comandos DML
+
+```sql
+-- Datos para la tabla pais
+INSERT INTO pais (nombre) VALUES ('España'), ('Francia'), ('Alemania');
+
+-- Datos para la tabla region
+INSERT INTO region (nombre, id_pais) VALUES 
+('Cataluña', 1), ('Île-de-France', 2), ('Baviera', 3);
+
+-- Datos para la tabla ciudad
+INSERT INTO ciudad (nombre, id_region) VALUES 
+('Barcelona', 1), ('París', 2), ('Múnich', 3);
+
+-- Datos para la tabla oficina
+INSERT INTO oficina (nombre, id_ciudad, codigo_postal) VALUES 
+('Oficina Barcelona', 1, 08001), ('Oficina París', 2, 75001), ('Oficina Múnich', 3, 80331);
+
+-- Datos para la tabla puesto_empleado
+INSERT INTO puesto_empleado (nombre) VALUES 
+('Gerente'), ('Asistente'), ('Vendedor');
+
+-- Datos para la tabla empleado
+INSERT INTO empleado (nombre, apellido1, apellido2, extension, email, id_oficina, id_jefe, id_puesto_empleado) VALUES 
+('Juan', 'García', 'Pérez', '123', 'juan.garcia@example.com', 1, 1, 1),
+('María', 'López', 'Martínez', '456', 'maria.lopez@example.com', 1, 1, 3),
+('Pierre', 'Dubois', NULL, '789', 'pierre.dubois@example.com', 2, 1, 1),
+('Sophie', 'Leclerc', NULL, '321', 'sophie.leclerc@example.com', 2, 3, 3),
+('Hans', 'Müller', NULL, '654', 'hans.muller@example.com', 3, 1, 1),
+('Anna', 'Schmidt', NULL, '987', 'anna.schmidt@example.com', 3, 5, 3);
+
+INSERT INTO estado_pedido (nombre) VALUES
+('En Progreso'),
+('Completado'),
+('Cancelado');
+
+INSERT INTO forma_pago (nombre) VALUES
+('Paypal'),
+('Tarjeta de Crédito'),
+('Transferencia Bancaria');
+
+INSERT INTO forma_pago_cliente (id_cliente, id_forma_pago) VALUES
+(1, 1),
+(2, 2),
+(3, 3);
+
+INSERT INTO proveedor_producto (id_proveedor, id_producto) VALUES
+(1, 4),
+(2, 5),
+(3, 6);
+
+INSERT INTO detalle_pedido (id_pedido, id_producto, cantidad, precio_unidad, numero_linea) VALUES
+(4, 4, 2, 1099.99, 1),
+(5, 5, 1, 1799.99, 1),
+(6, 6, 3, 1999.99, 1);
+
+INSERT INTO pago_pedido (id_pedido, id_forma_pago_cliente, fecha_pago, total) VALUES
+(4, 1, '2023-04-10', 1500.50),
+(5, 2, '2023-04-12', 2300.00),
+(6, 3, '2023-04-15', 1800.75);
+
+INSERT INTO producto (nombre, id_gama_producto, dimensiones, id_proveedor_producto, descripcion, cantidad_stock, precio_venta, precio_proveedor) VALUES
+('iPhone 13 Pro', 1, '15 x 7 x 0.7', 1, 'Teléfono móvil de alta gama con pantalla OLED de 6.1 pulgadas', 50, 1099.99, 899.99),
+('MacBook Pro 2021', 2, '14.9 x 9.8 x 0.64', 2, 'Portátil potente con chip M1, pantalla Retina de 13.3 pulgadas', 30, 1799.99, 1399.99),
+('Samsung QLED Q90R', 3, '65 pulgadas', 3, 'Televisor QLED con resolución 4K y tecnología HDR', 20, 1999.99, 1599.99);
+
+INSERT INTO cliente (nombre, id_ciudad, id_empleado_rep_ventas, limite_credito) VALUES
+('Juan Pérez', 1, 1, 2000.00),
+('María García', 2, 2, 2500.00),
+('Pedro Martínez', 3, 3, 1800.00);
+
+INSERT INTO contacto (nombre, apellido, id_cliente) VALUES
+('Ana', 'López', 1),
+('Miguel', 'Rodríguez', 2),
+('Sofía', 'Fernández', 3);
+
+INSERT INTO gama_producto (descripcion_texto, descripcion_html, imagen) VALUES
+('Electrónica de Consumo', 'Electrónica de Consumo - HTML', 'imagen_electronica.jpg'),
+('Informática', 'Informática - HTML', 'imagen_informatica.jpg'),
+('Electrodomésticos', 'Electrodomésticos - HTML', 'imagen_electrodomesticos.jpg');
+
+INSERT INTO proveedor (nombre, telefono, direccion) VALUES
+('Apple Inc.', 123456789, 'One Apple Park Way, Cupertino, CA, USA'),
+('Samsung Electronics Co., Ltd.', 987654321, '129 Samsung-ro, Maetan-dong, Yeongtong-gu, Suwon-si, Gyeonggi-do, South Korea'),
+('Sony Corporation', 456123789, '1-7-1 Konan, Minato-ku, Tokyo, Japan');
+
+INSERT INTO pedido (fecha_pedido, fecha_esperada, fecha_entrega, id_estado, comentarios) VALUES
+('2024-04-10', '2024-04-15', NULL, 1, 'Pedido urgente'),
+('2024-04-11', '2024-04-16', '2024-04-16', 2, NULL),
+('2024-04-12', '2024-04-17', '2024-04-18', 3, 'Entrega parcial');
+
+INSERT INTO forma_pago_cliente (id_cliente, id_forma_pago) VALUES
+(1, 1),
+(2, 2),
+(3, 3);
+
+INSERT INTO direccion_cliente (id_cliente, direccion, codigo_postal) VALUES
+(1, 'Calle Mayor 123', '28001'),
+(2, 'Avenida Libertad 45', '28002'),
+(3, 'Paseo del Prado 67', '28003');
+
+INSERT INTO direccion_oficina (id_oficina, direccion) VALUES
+(1, 'Calle Gran Vía 12'),
+(2, 'Plaza de España 34'),
+(3, 'Calle Alcalá 89');
+
+INSERT INTO telefono_cliente (id_tipo_telefono, id_cliente, numero) VALUES
+(1, 1, 123456789),
+(2, 2, 987654321),
+(3, 3, 555666777);
+
+INSERT INTO telefono_contacto (id_tipo_telefono, id_contacto, numero) VALUES
+(1, 1, 111222333),
+(2, 2, 444555666),
+(3, 3, 777888999);
+
+INSERT INTO telefono_oficina (id_tipo_telefono, id_oficina, numero) VALUES
+(1, 1, 999888777),
+(2, 2, 666555444),
+(3, 3, 333222111);
+```
+
+## Nivel normalizacion
+
+**1. Tabla Pais:**
+
+- **1NF:** Cada celda contiene un solo valor y no hay grupos repetitivos de datos.
+- **2NF:** No hay claves parciales ni dependencias transitivas.
+- **3NF:** No presenta dependencias transitivas.
+- **4NF:** No hay dependencias multivaluadas ni dependencias de unión.
+
+**2. Tabla Región:**
+
+- **1NF:** Cada celda contiene un solo valor y no hay grupos repetitivos de datos.
+- **2NF:** No hay claves parciales ni dependencias transitivas.
+- **3NF:** No presenta dependencias transitivas.
+- **4NF:** No hay dependencias multivaluadas ni dependencias de unión.
+
+**3. Tabla Ciudad:**
+
+- **1NF:** Cada celda contiene un solo valor y no hay grupos repetitivos de datos.
+- **2NF:** No hay claves parciales ni dependencias transitivas.
+- **3NF:** No presenta dependencias transitivas.
+- **4NF:** No hay dependencias multivaluadas ni dependencias de unión.
+
+**4. Tabla Oficina:**
+
+- **1NF:** Cada celda contiene un solo valor y no hay grupos repetitivos de datos.
+- **2NF:** No hay claves parciales ni dependencias transitivas.
+- **3NF:** No presenta dependencias transitivas.
+- **4NF:** No hay dependencias multivaluadas ni dependencias de unión.
+
+**5. Tabla Empleado:**
+
+- **1NF:** Cada celda contiene un solo valor y no hay grupos repetitivos de datos.
+- **2NF:** No hay claves parciales ni dependencias transitivas.
+- **3NF:** No presenta dependencias transitivas.
+- **4NF:** No hay dependencias multivaluadas ni dependencias de unión.
+
+**6. Tabla Cliente:**
+
+- **1NF:** Cada celda contiene un solo valor y no hay grupos repetitivos de datos.
+- **2NF:** No hay claves parciales ni dependencias transitivas.
+- **3NF:** No presenta dependencias transitivas.
+- **4NF:** No hay dependencias multivaluadas ni dependencias de unión.
+
+**7. Tabla Contacto:**
+
+- **1NF:** Cada celda contiene un solo valor y no hay grupos repetitivos de datos.
+- **2NF:** No hay claves parciales ni dependencias transitivas.
+- **3NF:** No presenta dependencias transitivas.
+- **4NF:** No hay dependencias multivaluadas ni dependencias de unión.
+
+**8. Tabla Producto:**
+
+- **1NF:** Cada celda contiene un solo valor y no hay grupos repetitivos de datos.
+- **2NF:** No hay claves parciales ni dependencias transitivas.
+- **3NF:** No presenta dependencias transitivas.
+- **4NF:** No hay dependencias multivaluadas ni dependencias de unión.
+
+**9. Tabla Pedido:**
+
+- **1NF:** Cada celda contiene un solo valor y no hay grupos repetitivos de datos.
+- **2NF:** No hay claves parciales ni dependencias transitivas.
+- **3NF:** No presenta dependencias transitivas.
+- **4NF:** No hay dependencias multivaluadas ni dependencias de unión.
+
+**10. Tabla Gama Producto:**
+
+- **1NF:** Cada celda contiene un solo valor y no hay grupos repetitivos de datos.
+- **2NF:** No hay claves parciales ni dependencias transitivas.
+- **3NF:** No presenta dependencias transitivas.
+- **4NF:** No hay dependencias multivaluadas ni dependencias de unión.
+
+**11. Tabla Estado Pedido:**
+
+- **1NF:** Cada celda contiene un solo valor y no hay grupos repetitivos de datos.
+- **2NF:** No hay claves parciales ni dependencias transitivas.
+- **3NF:** No presenta dependencias transitivas.
+- **4NF:** No hay dependencias multivaluadas ni dependencias de unión.
+
+**12. Tabla Proveedor:**
+
+- **1NF:** Cada celda contiene un solo valor y no hay grupos repetitivos de datos.
+- **2NF:** No hay claves parciales ni dependencias transitivas.
+- **3NF:** No presenta dependencias transitivas.
+- **4NF:** No hay dependencias multivaluadas ni dependencias de unión.
+
+**13. Tabla Proveedor Producto:**
+
+- **1NF:** Cada celda contiene un solo valor y no hay grupos repetitivos de datos.
+- **2NF:** No hay claves parciales ni dependencias transitivas.
+- **3NF:** No presenta dependencias transitivas.
+- **4NF:** No hay dependencias multivaluadas ni dependencias de unión.
+
+**14. Tabla Puesto Empleado:**
+
+- **1NF:** Cada celda contiene un solo valor y no hay grupos repetitivos de datos.
+- **2NF:** No hay claves parciales ni dependencias transitivas.
+- **3NF:** No presenta dependencias transitivas.
+- **4NF:** No hay dependencias multivaluadas ni dependencias de unión.
+
+**15. Tabla Forma Pago:**
+
+- **1NF:** Cada celda contiene un solo valor y no hay grupos repetitivos de datos.
+- **2NF:** No hay claves parciales ni dependencias transitivas.
+- **3NF:** No presenta dependencias transitivas.
+- **4NF:** No hay dependencias multivaluadas ni dependencias de unión.
+
+**16. Tabla Forma Pago Cliente:**
+
+- **1NF:** Cada celda contiene un solo valor y no hay grupos repetitivos de datos.
+- **2NF:** No hay claves parciales ni dependencias transitivas.
+- **3NF:** No presenta dependencias transitivas.
+- **4NF:** No hay dependencias multivaluadas ni dependencias de unión.
+
+**17. Tabla Detalle Pedido:**
+
+- **1NF:** Cada celda contiene un solo valor y no hay grupos repetitivos de datos.
+- **2NF:** No hay claves parciales ni dependencias transitivas.
+- **3NF:** No presenta dependencias transitivas.
+- **4NF:** No hay dependencias multivaluadas ni dependencias de unión.
+
+**18. Tabla Pago Pedido:**
+
+- **1NF:** Cada celda contiene un solo valor y no hay grupos repetitivos de datos.
+- **2NF:** No hay claves parciales ni dependencias transitivas.
+- **3NF:** No presenta dependencias transitivas.
+- **4NF:** No hay dependencias multivaluadas ni dependencias de unión.
+
+**19. Tabla Dirección Cliente:**
+
+- **1NF:** Cada celda contiene un solo valor y no hay grupos repetitivos de datos.
+- **2NF:** No hay claves parciales ni dependencias transitivas.
+- **3NF:** No presenta dependencias transitivas.
+- **4NF:** No hay dependencias multivaluadas ni dependencias de unión.
+
+**20. Tabla Dirección Oficina:**
+
+- **1NF:** Cada celda contiene un solo valor y no hay grupos repetitivos de datos.
+- **2NF:** No hay claves parciales ni dependencias transitivas.
+- **3NF:** No presenta dependencias transitivas.
+- **4NF:** No hay dependencias multivaluadas ni dependencias de unión.
+
+**21. Tabla Teléfono Cliente:**
+
+- **1NF:** Cada celda contiene un solo valor y no hay grupos repetitivos de datos.
+- **2NF:** No hay claves parciales ni dependencias transitivas.
+- **3NF:** No presenta dependencias transitivas.
+- **4NF:** No hay dependencias multivaluadas ni dependencias de unión.
+
+**22. Tabla Teléfono Contacto:**
+
+- **1NF:** Cada celda contiene un solo valor y no hay grupos repetitivos de datos.
+- **2NF:** No hay claves parciales ni dependencias transitivas.
+- **3NF:** No presenta dependencias transitivas.
+- **4NF:** No hay dependencias multivaluadas ni dependencias de unión.
+
+**23. Tabla Teléfono Oficina:**
+
+- **1NF:** Cada celda contiene un solo valor y no hay grupos repetitivos de datos.
+- **2NF:** No hay claves parciales ni dependencias transitivas.
+- **3NF:** No presenta dependencias transitivas.
+- **4NF:** No hay dependencias multivaluadas ni dependencias de unión.
+
+**24. Tabla Tipo Teléfono:**
+
+- **1NF:** Cada celda contiene un solo valor y no hay grupos repetitivos de datos.
+
+- **2NF:** No hay claves parciales ni dependencias transitivas.
+
+- **3NF:** No presenta dependencias transitivas.
+
+- **4NF:** No hay dependencias multivaluadas ni dependencias de unión.
+
+  Todas las tablas parecen cumplir hasta la cuarta forma normal (4NF), ya que no presentan dependencias multivaluadas ni dependencias de unión. Cada tabla parece estar bien estructurada y sin redundancia de datos.
+
+## Consultas sobre una tabla
 
 1. #### Devuelve un listado con el código de oficina y la ciudad donde hay oficinas.
 
