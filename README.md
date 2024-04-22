@@ -855,3 +855,124 @@ GROUP BY YEAR(fecha_pago);
 +------+-------------+
 ```
 
+### Consultas variadas
+
+1. #### Devuelve el listado de clientes indicando el nombre del cliente y cuántos pedidos ha realizado. Tenga en cuenta que pueden existir clientes que no
+han realizado ningún pedido.
+
+```sql
+SELECT cl.nombre AS nombre_cliente, COUNT(DISTINCT pd.id) AS cantidad_pedidos
+FROM cliente AS cl
+LEFT JOIN forma_pago_cliente AS fpc ON cl.id = fpc.id_cliente
+LEFT JOIN pago_pedido AS pp ON fpc.id = pp.id_forma_pago_cliente
+LEFT JOIN pedido AS pd ON pp.id_pedido = pd.id
+GROUP BY cl.id;
+
++----------------+------------------+
+| nombre_cliente | cantidad_pedidos |
++----------------+------------------+
+| Juan Pérez     |                1 |
+| María García   |                1 |
+| Pedro Martínez |                1 |
++----------------+------------------+
+```
+
+2. #### Devuelve un listado con los nombres de los clientes y el total pagado por cada uno de ellos. Tenga en cuenta que pueden existir clientes que no han
+realizado ningún pago.
+
+```sql
+SELECT cl.nombre AS nombre_cliente, COALESCE(SUM(pp.total), 0) AS total_pagado
+FROM cliente AS cl
+LEFT JOIN forma_pago_cliente AS fpc ON cl.id = fpc.id_cliente
+LEFT JOIN pago_pedido AS pp ON fpc.id = pp.id_forma_pago_cliente
+GROUP BY cl.id;
+
++----------------+--------------+
+| nombre_cliente | total_pagado |
++----------------+--------------+
+| Juan Pérez     |         2200 |
+| María García   |         1800 |
+| Pedro Martínez |         6000 |
++----------------+--------------+
+```
+
+3. #### Devuelve el nombre de los clientes que hayan hecho pedidos en 2008 ordenados alfabéticamente de menor a mayor.
+
+```sql
+SELECT DISTINCT cl.nombre AS nombre_cliente
+FROM cliente AS cl
+INNER JOIN forma_pago_cliente AS fpc ON cl.id = fpc.id_cliente
+INNER JOIN pago_pedido AS pp ON fpc.id = pp.id_forma_pago_cliente
+INNER JOIN pedido AS p ON pp.id_pedido = p.id
+WHERE YEAR(p.fecha_pedido) = 2008
+ORDER BY nombre_cliente ASC;
+```
+
+4. #### Devuelve el nombre del cliente, el nombre y primer apellido de su representante de ventas y el número de teléfono de la oficina del representante de ventas, de aquellos clientes que no hayan realizado ningún
+pago.
+
+```sql
+SELECT cl.nombre AS nombre_cliente, em.nombre AS nombre_empleado, em.apellido1 AS apellido1_empleado, tof.numero AS telefono_oficina_representante
+FROM cliente AS cl
+LEFT JOIN forma_pago_cliente AS fpc ON cl.id = fpc.id_cliente
+LEFT JOIN empleado AS em ON cl.id_empleado_rep_ventas = em.id
+LEFT JOIN telefono_oficina AS tof ON em.id_oficina = tof.id_oficina AND tof.id_tipo_telefono = 1
+WHERE fpc.id_cliente IS NULL;
+```
+
+5. #### Devuelve el listado de clientes donde aparezca el nombre del cliente, el nombre y primer apellido de su representante de ventas y la ciudad donde
+está su oficina.
+
+```sql
+SELECT cl.nombre AS nombre_cliente, em.nombre AS nombre_empleado, em.apellido1 AS apellido1_empleado, c.nombre AS ciudad_oficina
+FROM cliente AS cl
+LEFT JOIN empleado AS em ON cl.id_empleado_rep_ventas = em.id
+LEFT JOIN oficina AS o ON em.id_oficina = o.id
+LEFT JOIN ciudad AS c ON o.id_ciudad = c.id;
+
++----------------+-----------------+--------------------+----------------+
+| nombre_cliente | nombre_empleado | apellido1_empleado | ciudad_oficina |
++----------------+-----------------+--------------------+----------------+
+| Juan Pérez     | Juan            | García             | Barcelona      |
+| María García   | María           | López              | Barcelona      |
+| Pedro Martínez | Pierre          | Dubois             | París          |
++----------------+-----------------+--------------------+----------------+
+```
+
+6. #### Devuelve el nombre, apellidos, puesto y teléfono de la oficina de aquellos empleados que no sean representante de ventas de ningún cliente.
+
+```sql
+SELECT em.nombre AS nombre_empleado, em.apellido1 AS apellido1_empleado, em.apellido2 AS apellido2_empleado, pe.nombre AS puesto_empleado, tof.numero AS telefono_oficina
+FROM empleado AS em
+LEFT JOIN puesto_empleado AS pe ON em.id_puesto_empleado = pe.id
+LEFT JOIN oficina AS ofi ON em.id_oficina = ofi.id
+LEFT JOIN telefono_oficina AS tof ON ofi.id = tof.id_oficina
+WHERE em.id NOT IN (SELECT id_empleado_rep_ventas FROM cliente);
+
++-----------------+--------------------+--------------------+-----------------+------------------+
+| nombre_empleado | apellido1_empleado | apellido2_empleado | puesto_empleado | telefono_oficina |
++-----------------+--------------------+--------------------+-----------------+------------------+
+| Sophie          | Leclerc            | NULL               | Vendedor        |            32767 |
+| Hans            | Müller             | NULL               | Gerente         |            32767 |
+| Anna            | Schmidt            | NULL               | Vendedor        |            32767 |
++-----------------+--------------------+--------------------+-----------------+------------------+
+```
+
+7. #### Devuelve un listado indicando todas las ciudades donde hay oficinas y el número de empleados que tiene.
+
+```sql
+SELECT c.nombre AS nombre_ciudad, COUNT(em.id) AS numero_empleados
+FROM ciudad AS c
+LEFT JOIN oficina AS ofi ON c.id = ofi.id_ciudad
+LEFT JOIN empleado AS em ON ofi.id = em.id_oficina
+GROUP BY c.nombre;
+
++---------------+------------------+
+| nombre_ciudad | numero_empleados |
++---------------+------------------+
+| Barcelona     |                2 |
+| Múnich        |                2 |
+| París         |                2 |
++---------------+------------------+
+```
+
