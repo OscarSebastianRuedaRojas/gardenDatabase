@@ -553,3 +553,305 @@ WHERE c.id_empleado_rep_ventas IS NULL;
 +----+--------+-----------+-----------+---------+-------------+----------------+----------------+
 ```
 
+### Consultas resumen
+
+1. #### ¿Cuántos empleados hay en la compañía?
+
+```sql
+SELECT COUNT(nombre) as empleados_compañia
+FROM empleado;
+
++--------------------+
+| empleados_compañia |
++--------------------+
+|                  6 |
++--------------------+
+```
+
+2. #### ¿Cuántos clientes tiene cada país?
+
+```sql
+SELECT p.nombre AS pais, COUNT(cl.id) AS total_clientes
+FROM cliente AS cl
+INNER JOIN ciudad AS c ON cl.id_ciudad = c.id
+INNER JOIN region AS r ON c.id_region = r.id
+INNER JOIN pais AS p ON r.id_pais = p.id
+GROUP BY p.nombre;
+
++----------+----------------+
+| pais     | total_clientes |
++----------+----------------+
+| Alemania |              1 |
+| España   |              1 |
+| Francia  |              1 |
++----------+----------------+
+
+```
+
+3. #### ¿Cuál fue el pago medio en 2009?
+
+```sql
+SELECT AVG(total) AS pago_medio_2009
+FROM pago_pedido
+WHERE YEAR(fecha_pago) = 2009;
+
++-----------------+
+| pago_medio_2009 |
++-----------------+
+|            NULL |
++-----------------+
+```
+
+4. #### ¿Cuántos pedidos hay en cada estado? Ordena el resultado de forma descendente por el número de pedidos.
+
+```sql
+SELECT ep.nombre AS estado, COUNT(p.id) AS total_pedidos
+FROM pedido as p
+INNER JOIN estado_pedido AS ep ON ep.id = p.id_estado
+GROUP BY ep.nombre;
+
++------------+---------------+
+| estado     | total_pedidos |
++------------+---------------+
+| Cancelado  |             1 |
+| Completado |             1 |
+| En proceso |             1 |
++------------+---------------+
+```
+
+5. #### Calcula el precio de venta del producto más caro y más barato en una misma consulta.
+
+```sql
+SELECT (SELECT MAX(precio_venta) FROM producto) AS precio_mas_caro, (SELECT MIN(precio_venta) FROM producto) AS precio_mas_barato;
+    
++-----------------+-------------------+
+| precio_mas_caro | precio_mas_barato |
++-----------------+-------------------+
+|         1999.99 |           1099.99 |
++-----------------+-------------------+
+
+```
+
+6. #### Calcula el número de clientes que tiene la empresa.
+
+```sql
+SELECT COUNT(nombre) AS numero_clientes
+FROM cliente;
+
++-----------------+
+| numero_clientes |
++-----------------+
+|               3 |
++-----------------+
+```
+
+7. #### ¿Cuántos clientes existen con domicilio en la ciudad de Madrid?
+
+```sql
+SELECT c.nombre AS ciudad, COUNT(cl.id) AS numero_clientes
+FROM cliente AS cl
+INNER JOIN ciudad AS c On cl.id_ciudad = c.id
+GROUP BY c.nombre;
+
++-----------+-----------------+
+| ciudad    | numero_clientes |
++-----------+-----------------+
+| Barcelona |               1 |
+| Múnich    |               1 |
+| París     |               1 |
++-----------+-----------------+
+```
+
+8. #### ¿Calcula cuántos clientes tiene cada una de las ciudades que empiezan por M?
+
+```sql
+SELECT c.nombre AS ciudad, COUNT(cl.id) AS numero_clientes
+FROM cliente AS cl
+INNER JOIN ciudad AS c ON cl.id_ciudad = c.id
+WHERE c.nombre LIKE 'M%'
+GROUP BY c.nombre;
+
++--------+-----------------+
+| ciudad | numero_clientes |
++--------+-----------------+
+| Múnich |               1 |
++--------+-----------------+
+```
+
+9. #### Devuelve el nombre de los representantes de ventas y el número de clientes al que atiende cada uno.
+
+```sql
+SELECT em.nombre as representante, COUNT(cl.id) as numero_clientes
+FROM empleado AS em
+INNER JOIN cliente as cl ON cl.id_empleado_rep_ventas = em.id
+GROUP BY em.nombre;
+
++---------------+-----------------+
+| representante | numero_clientes |
++---------------+-----------------+
+| Juan          |               1 |
+| María         |               1 |
+| Pierre        |               1 |
++---------------+-----------------+
+```
+
+10. #### Calcula el número de clientes que no tiene asignado representante de ventas.
+
+```sql
+SELECT COUNT(cl.id) AS numero_clientes_sin_representante
+FROM cliente AS cl
+INNER JOIN empleado AS em ON em.id = cl.id_empleado_rep_ventas
+WHERE em.id IS NULL;
+
++-----------------------------------+
+| numero_clientes_sin_representante |
++-----------------------------------+
+|                                 0 |
++-----------------------------------+
+```
+
+11. #### Calcula la fecha del primer y último pago realizado por cada uno de los clientes. El listado deberá mostrar el nombre y los apellidos de cada cliente.
+
+```sql
+SELECT cl.nombre AS nombre_cliente, MIN(pp.fecha_pago) AS primer_pago, MAX(pp.fecha_pago) AS ultimo_pago
+FROM cliente AS cl
+INNER JOIN forma_pago_cliente AS fpc ON cl.id = fpc.id_cliente
+INNER JOIN pago_pedido AS pp ON fpc.id = pp.id_forma_pago_cliente
+GROUP BY cl.id;
+
++----------------+-------------+-------------+
+| nombre_cliente | primer_pago | ultimo_pago |
++----------------+-------------+-------------+
+| Juan Pérez     | 2024-04-10  | 2024-04-10  |
+| María García   | 2024-04-11  | 2024-04-11  |
+| Pedro Martínez | 2024-04-12  | 2024-04-12  |
++----------------+-------------+-------------+
+```
+
+12. #### Calcula el número de productos diferentes que hay en cada uno de los pedidos.
+
+```sql
+SELECT id_pedido,  COUNT(DISTINCT id_producto) AS num_productos_diferentes
+FROM detalle_pedido
+GROUP BY id_pedido;
+
++-----------+--------------------------+
+| id_pedido | num_productos_diferentes |
++-----------+--------------------------+
+|         4 |                        1 |
+|         5 |                        1 |
+|         6 |                        1 |
++-----------+--------------------------+
+```
+
+13. #### Calcula la suma de la cantidad total de todos los productos que aparecen en cada uno de los pedidos.
+
+```sql
+SELECT id_pedido, SUM(cantidad) AS cantidad_total
+FROM detalle_pedido
+GROUP BY id_pedido;
+
++-----------+----------------+
+| id_pedido | cantidad_total |
++-----------+----------------+
+|         4 |              2 |
+|         5 |              1 |
+|         6 |              3 |
++-----------+----------------+
+```
+
+14. #### Devuelve un listado de los 20 productos más vendidos y el número total de unidades que se han vendido de cada uno. El listado deberá estar ordenado
+por el número total de unidades vendidas.
+
+```sql
+SELECT p.nombre AS nombre_producto, SUM(dp.cantidad) AS total_unidades_vendidas
+FROM detalle_pedido AS dp
+INNER JOIN producto AS p ON dp.id_producto = p.id
+GROUP BY p.nombre
+ORDER BY total_unidades_vendidas DESC
+LIMIT 20;
+
++-------------------+-------------------------+
+| nombre_producto   | total_unidades_vendidas |
++-------------------+-------------------------+
+| Samsung QLED Q90R |                       3 |
+| iPhone 13 Pro     |                       2 |
+| MacBook Pro 2021  |                       1 |
++-------------------+-------------------------+
+```
+
+15. #### La facturación que ha tenido la empresa en toda la historia, indicando la base imponible, el IVA y el total facturado. La base imponible se calcula
+sumando el coste del producto por el número de unidades vendidas de la
+tabla detalle_pedido. El IVA es el 21 % de la base imponible, y el total la
+suma de los dos campos anteriores.
+
+```sql
+SELECT SUM(dp.cantidad * p.precio_venta) AS base_imponible, SUM(dp.cantidad * p.precio_venta) * 0.21 AS iva, SUM(dp.cantidad * p.precio_venta) + (SUM(dp.cantidad * p.precio_venta) * 0.21) AS total_facturado
+FROM detalle_pedido AS dp
+INNER JOIN producto AS p ON dp.id_producto = p.id;
+
++----------------+-----------+-----------------+
+| base_imponible | iva       | total_facturado |
++----------------+-----------+-----------------+
+|        9999.94 | 2099.9874 |      12099.9274 |
++----------------+-----------+-----------------+
+```
+
+16. #### La misma información que en la pregunta anterior, pero agrupada por código de producto.
+
+```sql
+SELECT dp.id_producto, SUM(dp.cantidad * p.precio_venta) AS base_imponible, SUM(dp.cantidad * p.precio_venta) * 0.21 AS iva, SUM(dp.cantidad * p.precio_venta) + (SUM(dp.cantidad * p.precio_venta) * 0.21) AS total_facturado
+FROM detalle_pedido AS dp
+INNER JOIN producto AS p ON dp.id_producto = p.id
+GROUP BY dp.id_producto;
+
++-------------+----------------+-----------+-----------------+
+| id_producto | base_imponible | iva       | total_facturado |
++-------------+----------------+-----------+-----------------+
+|           4 |        2199.98 |  461.9958 |       2661.9758 |
+|           5 |        1799.99 |  377.9979 |       2177.9879 |
+|           6 |        5999.97 | 1259.9937 |       7259.9637 |
++-------------+----------------+-----------+-----------------+
+```
+
+17. #### La misma información que en la pregunta anterior, pero agrupada por código de producto filtrada por los códigos que empiecen por OR.
+
+```sql
+SELECT dp.id_producto, SUM(dp.cantidad * p.precio_venta) AS base_imponible, SUM(dp.cantidad * p.precio_venta) * 0.21 AS iva, SUM(dp.cantidad * p.precio_venta) + (SUM(dp.cantidad * p.precio_venta) * 0.21) AS total_facturado
+FROM detalle_pedido AS dp
+INNER JOIN producto AS p ON dp.id_producto = p.id
+WHERE p.id LIKE 'OR%'
+GROUP BY dp.id_producto;
+```
+
+18. #### Lista las ventas totales de los productos que hayan facturado más de 3000 euros. Se mostrará el nombre, unidades vendidas, total facturado y total
+facturado con impuestos (21% IVA).
+
+```sql
+SELECT p.nombre AS nombre_producto, SUM(dp.cantidad) AS unidades_vendidas, SUM(dp.cantidad * p.precio_venta) AS total_facturado_sin_iva, SUM(dp.cantidad * p.precio_venta) * 0.21 AS iva, SUM(dp.cantidad * p.precio_venta) + (SUM(dp.cantidad * p.precio_venta) * 0.21) AS total_facturado_con_iva
+FROM detalle_pedido AS dp
+INNER JOIN producto AS p ON dp.id_producto = p.id
+GROUP BY dp.id_producto
+HAVING total_facturado_sin_iva > 3000;
+
++-------------------+-------------------+-------------------------+-----------+-------------------------+
+| nombre_producto   | unidades_vendidas | total_facturado_sin_iva | iva       | total_facturado_con_iva |
++-------------------+-------------------+-------------------------+-----------+-------------------------+
+| Samsung QLED Q90R |                 3 |                 5999.97 | 1259.9937 |               7259.9637 |
++-------------------+-------------------+-------------------------+-----------+-------------------------+
+```
+
+19. #### Muestre la suma total de todos los pagos que se realizaron para cada uno de los años que aparecen en la tabla pagos.
+
+```sql
+SELECT YEAR(fecha_pago) AS año, SUM(total) AS total_pagos
+FROM pago_pedido
+GROUP BY YEAR(fecha_pago);
+
++------+-------------+
+| año  | total_pagos |
++------+-------------+
+| 2024 |       10000 |
++------+-------------+
+```
+
