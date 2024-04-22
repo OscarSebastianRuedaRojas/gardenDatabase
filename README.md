@@ -204,3 +204,193 @@ INNER JOIN ciudad as c ON cl.id_ciudad = c.id
 WHERE c.nombre = 'Madrid' AND cl.id_empleado_rep_ventas in (11,30);
 ```
 
+### Consultas multitabla (Composición interna)
+
+1. #### Obtén un listado con el nombre de cada cliente y el nombre y apellido de su representante de ventas.
+
+```sql
+SELECT cl.nombre AS nombre_cliente, em.nombre as nombre_empleado, em.apellido1 as apellido1_empleado, em.apellido2 as apellido2_empleado
+FROM cliente as cl
+INNER JOIN empleado as em ON cl.id_empleado_rep_ventas = em.id;
+
++----------------+-----------------+--------------------+--------------------+
+| nombre_cliente | nombre_empleado | apellido1_empleado | apellido2_empleado |
++----------------+-----------------+--------------------+--------------------+
+| Juan Pérez     | Juan            | García             | Pérez              |
+| María García   | María           | López              | Martínez           |
+| Pedro Martínez | Pierre          | Dubois             | NULL               |
++----------------+-----------------+--------------------+--------------------+
+```
+
+2. #### Muestra el nombre de los clientes que hayan realizado pagos junto con el nombre de sus representantes de ventas.
+
+```sql
+SELECT cl.nombre AS nombre_cliente, em.nombre as nombre_empleado, em.apellido1 as apellido1_empleado, em.apellido2 as apellido2_empleado
+FROM cliente AS cl
+INNER JOIN empleado as em ON cl.id_empleado_rep_ventas = em.id
+INNER JOIN forma_pago_cliente As fpc On fpc.id_cliente = cl.id
+INNER JOIN pago_pedido AS pp ON pp.id_forma_pago_cliente = fpc.id;
+
++----------------+-----------------+--------------------+--------------------+
+| nombre_cliente | nombre_empleado | apellido1_empleado | apellido2_empleado |
++----------------+-----------------+--------------------+--------------------+
+| Juan Pérez     | Juan            | García             | Pérez              |
+| María García   | María           | López              | Martínez           |
+| Pedro Martínez | Pierre          | Dubois             | NULL               |
++----------------+-----------------+--------------------+--------------------+
+```
+
+3. #### Muestra el nombre de los clientes que no hayan realizado pagos junto con el nombre de sus representantes de ventas.
+
+```sql
+SELECT cl.nombre AS nombre_cliente, em.nombre AS nombre_empleado, em.apellido1 AS apellido1_empleado, em.apellido2 AS apellido2_empleado
+FROM cliente AS cl
+INNER JOIN empleado AS em ON cl.id_empleado_rep_ventas = em.id
+INNER JOIN forma_pago_cliente AS fpc ON fpc.id_cliente = cl.id
+LEFT JOIN pago_pedido AS pp ON fpc.id_forma_pago = pp.id_forma_pago_cliente
+WHERE pp.id_forma_pago_cliente IS NULL;
+```
+
+4. #### Devuelve el nombre de los clientes que han hecho pagos y el nombre de sus representantes junto con la ciudad de la oficina a la que pertenece el
+representante.
+
+```sql
+SELECT cl.nombre AS nombre_cliente, em.nombre as nombre_empleado, em.apellido1 as apellido1_empleado, em.apellido2 as apellido2_empleado, c.nombre as ciudad_oficina_representante
+FROM cliente AS cl
+INNER JOIN empleado as em ON cl.id_empleado_rep_ventas = em.id
+INNER JOIN forma_pago_cliente As fpc On fpc.id_cliente = cl.id
+INNER JOIN pago_pedido AS pp ON pp.id_forma_pago_cliente = fpc.id
+INNER JOIN oficina AS of ON em.id_oficina = of.id
+INNER JOIN ciudad AS c ON of.id_ciudad = c.id;
+
++----------------+-----------------+--------------------+--------------------+------------------------------+
+| nombre_cliente | nombre_empleado | apellido1_empleado | apellido2_empleado | ciudad_oficina_representante |
++----------------+-----------------+--------------------+--------------------+------------------------------+
+| Juan Pérez     | Juan            | García             | Pérez              | Barcelona                    |
+| María García   | María           | López              | Martínez           | Barcelona                    |
+| Pedro Martínez | Pierre          | Dubois             | NULL               | París                        |
++----------------+-----------------+--------------------+--------------------+------------------------------+
+```
+
+5. #### Devuelve el nombre de los clientes que no hayan hecho pagos y el nombre de sus representantes junto con la ciudad de la oficina a la que pertenece el
+representante.
+
+```sql
+SELECT cl.nombre AS nombre_cliente, em.nombre AS nombre_empleado, em.apellido1 AS apellido1_empleado, em.apellido2 AS apellido2_empleado
+FROM cliente AS cl
+INNER JOIN empleado AS em ON cl.id_empleado_rep_ventas = em.id
+INNER JOIN forma_pago_cliente AS fpc ON fpc.id_cliente = cl.id
+INNER JOIN pago_pedido AS pp ON pp.id_forma_pago_cliente = fpc.id
+INNER JOIN oficina AS of ON em.id_oficina = of.id
+INNER JOIN ciudad AS c ON of.id_ciudad = c.id;
+WHERE pp.id_forma_pago_cliente IS NULL;
+
+```
+
+6. #### Lista la dirección de las oficinas que tengan clientes en Fuenlabrada.
+
+```sql
+SELECT df.direccion AS direccion_oficina
+FROM oficina AS of
+INNER JOIN empleado as em ON em.id_oficina = of.id
+INNER JOIN cliente as cl ON cl.id_empleado_rep_ventas = em.id
+INNER JOIN ciudad as c ON cl.id_ciudad = c.id
+INNER JOIn direccion_oficina as df ON df.id_oficina = of.id
+WHERE c.nombre = 'Fuenlabrada';
+```
+
+7. #### Devuelve el nombre de los clientes y el nombre de sus representantes junto con la ciudad de la oficina a la que pertenece el representante.
+
+```sql
+SELECT cl.nombre AS nombre_cliente, em.nombre as nombre_empleado, em.apellido1 as apellido1_empleado, em.apellido2 as apellido2_empleado, c.nombre as ciudad_oficina_representante
+FROM cliente AS cl
+INNER JOIN empleado as em ON cl.id_empleado_rep_ventas = em.id
+INNER JOIN oficina AS of ON em.id_oficina = of.id
+INNER JOIN ciudad AS c ON of.id_ciudad = c.id;
+
++----------------+-----------------+--------------------+--------------------+------------------------------+
+| nombre_cliente | nombre_empleado | apellido1_empleado | apellido2_empleado | ciudad_oficina_representante |
++----------------+-----------------+--------------------+--------------------+------------------------------+
+| Juan Pérez     | Juan            | García             | Pérez              | Barcelona                    |
+| María García   | María           | López              | Martínez           | Barcelona                    |
+| Pedro Martínez | Pierre          | Dubois             | NULL               | París                        |
++----------------+-----------------+--------------------+--------------------+------------------------------+
+```
+
+8. #### Devuelve un listado con el nombre de los empleados junto con el nombre de sus jefes.
+
+```sql
+SELECT em.nombre as nombre_empleado, em.apellido1 as apellido1_empleado, em.apellido2 as apellido2_empleado, j.nombre as nombre_jefe, j.apellido1 as apellido1_jefe, j.apellido2 as apellido2_jefe
+FROM empleado as em
+INNER JOIN empleado as j ON em.id_jefe = j.id;
+
++-----------------+--------------------+--------------------+-------------+----------------+----------------+
+| nombre_empleado | apellido1_empleado | apellido2_empleado | nombre_jefe | apellido1_jefe | apellido2_jefe |
++-----------------+--------------------+--------------------+-------------+----------------+----------------+
+| Juan            | García             | Pérez              | Juan        | García         | Pérez          |
+| María           | López              | Martínez           | Juan        | García         | Pérez          |
+| Pierre          | Dubois             | NULL               | Juan        | García         | Pérez          |
+| Sophie          | Leclerc            | NULL               | Pierre      | Dubois         | NULL           |
+| Hans            | Müller             | NULL               | Juan        | García         | Pérez          |
+| Anna            | Schmidt            | NULL               | Hans        | Müller         | NULL           |
++-----------------+--------------------+--------------------+-------------+----------------+----------------+
+```
+
+9. #### Devuelve un listado que muestre el nombre de cada empleados, el nombre de su jefe y el nombre del jefe de sus jefe.
+
+```sql
+SELECT em.nombre as nombre_empleado, em.apellido1 as apellido1_empleado, em.apellido2 as apellido2_empleado, j.nombre as nombre_jefe, j2.nombre as jefe_del_jefe
+FROM empleado as em
+INNER JOIN empleado as j ON em.id_jefe = j.id
+INNER JOIN empleado as j2 ON j.id_jefe = j2.id;
+
++-----------------+--------------------+--------------------+-------------+---------------+
+| nombre_empleado | apellido1_empleado | apellido2_empleado | nombre_jefe | jefe_del_jefe |
++-----------------+--------------------+--------------------+-------------+---------------+
+| Juan            | García             | Pérez              | Juan        | Juan          |
+| María           | López              | Martínez           | Juan        | Juan          |
+| Pierre          | Dubois             | NULL               | Juan        | Juan          |
+| Sophie          | Leclerc            | NULL               | Pierre      | Juan          |
+| Hans            | Müller             | NULL               | Juan        | Juan          |
+| Anna            | Schmidt            | NULL               | Hans        | Juan          |
++-----------------+--------------------+--------------------+-------------+---------------+
+```
+
+10. #### Devuelve el nombre de los clientes a los que no se les ha entregado a tiempo un pedido.
+
+```sql
+SELECT cl.nombre, p.fecha_esperada, p.fecha_entrega
+FROM cliente AS cl
+INNER JOIN forma_pago_cliente AS fpc ON fpc.id_cliente = cl.id
+INNER JOIN pago_pedido AS pp ON pp.id_forma_pago_cliente = fpc.id
+INNER JOIN pedido AS p ON pp.id_pedido = p.id
+WHERE p.fecha_esperada-p.fecha_entrega;
+
++----------------+----------------+---------------+
+| nombre         | fecha_esperada | fecha_entrega |
++----------------+----------------+---------------+
+| Pedro Martínez | 2024-04-17     | 2024-04-18    |
++----------------+----------------+---------------+
+```
+
+11. #### Devuelve un listado de las diferentes gamas de producto que ha comprado cada cliente.
+
+```sql
+SELECT DISTINCT cl.nombre AS nombre_cliente, gp.descripcion_texto AS gama_producto
+FROM cliente cl
+INNER JOIN forma_pago_cliente fpc ON fpc.id_cliente = cl.id
+INNER JOIN pago_pedido pp ON pp.id_forma_pago_cliente = fpc.id
+INNER JOIN pedido pd ON pp.id_pedido = pd.id
+INNER JOIN detalle_pedido dp ON pd.id = dp.id_pedido
+INNER JOIN producto pr ON dp.id_producto = pr.id
+INNER JOIN gama_producto gp ON pr.id_gama_producto = gp.id;
+
++----------------+------------------------+
+| nombre_cliente | gama_producto          |
++----------------+------------------------+
+| Juan Pérez     | Electrónica de Consumo |
+| María García   | Informática            |
+| Pedro Martínez | Electrodomésticos      |
++----------------+------------------------+
+```
+
