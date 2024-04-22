@@ -394,3 +394,162 @@ INNER JOIN gama_producto gp ON pr.id_gama_producto = gp.id;
 +----------------+------------------------+
 ```
 
+### Consultas multitabla (Composición externa)
+
+1. #### Devuelve un listado que muestre solamente los clientes que no han realizado ningún pago.
+
+```sql
+SELECT cl.nombre AS nombre_cliente, em.nombre AS nombre_empleado, em.apellido1 AS apellido1_empleado, em.apellido2 AS apellido2_empleado
+FROM cliente AS cl
+LEFT JOIN empleado AS em ON cl.id_empleado_rep_ventas = em.id
+LEFT JOIN forma_pago_cliente AS fpc ON fpc.id_cliente = cl.id
+LEFT JOIN pago_pedido AS pp ON pp.id_forma_pago_cliente = fpc.id
+WHERE pp.id_forma_pago_cliente IS NULL;
+```
+
+2. #### Devuelve un listado que muestre solamente los clientes que no han realizado ningún pedido.
+
+```sql
+SELECT cl.nombre AS nombre_cliente, em.nombre AS nombre_empleado, em.apellido1 AS apellido1_empleado, em.apellido2 AS apellido2_empleado
+FROM cliente AS cl
+LEFT JOIN empleado AS em ON cl.id_empleado_rep_ventas = em.id
+LEFT JOIN forma_pago_cliente AS fpc ON fpc.id_cliente = cl.id
+LEFT JOIN pago_pedido AS pp ON pp.id_forma_pago_cliente = fpc.id
+WHERE pp.id_pedido IS NULL;
+```
+
+3. #### Devuelve un listado que muestre los clientes que no han realizado ningún pago y los que no han realizado ningún pedido.
+
+```sql
+SELECT cl.nombre AS nombre_cliente, em.nombre AS nombre_empleado, em.apellido1 AS apellido1_empleado, em.apellido2 AS apellido2_empleado
+FROM cliente AS cl
+LEFT JOIN empleado AS em ON cl.id_empleado_rep_ventas = em.id
+LEFT JOIN forma_pago_cliente AS fpc ON fpc.id_cliente = cl.id
+LEFT JOIN pago_pedido AS pp ON pp.id_forma_pago_cliente = fpc.id
+WHERE pp.id_pedido IS NULL AND pp.id_forma_pago_cliente IS NULL;
+```
+
+4. #### Devuelve un listado que muestre solamente los empleados que no tienen una oficina asociada.
+
+```sql
+SELECT em.nombre, em.apellido1, em.apellido2
+FROM empleado as em
+LEFT JOIN oficina as f ON em.id_oficina = f.id
+WHERE f.id IS NULL;
+```
+
+5. #### Devuelve un listado que muestre solamente los empleados que no tienen un cliente asociado.
+
+```sql
+SELECT em.id, em.nombre, em.apellido1, em.apellido2
+FROM empleado AS em
+LEFT JOIN cliente AS cl ON em.id = cl.id_empleado_rep_ventas
+WHERE cl.id_empleado_rep_ventas IS NULL;
+
++----+--------+-----------+-----------+
+| id | nombre | apellido1 | apellido2 |
++----+--------+-----------+-----------+
+|  4 | Sophie | Leclerc   | NULL      |
+|  5 | Hans   | Müller    | NULL      |
+|  6 | Anna   | Schmidt   | NULL      |
++----+--------+-----------+-----------+
+```
+
+6. #### Devuelve un listado que muestre solamente los empleados que no tienen un cliente asociado junto con los datos de la oficina donde trabajan.
+
+```sql
+SELECT em.id, em.nombre, em.apellido1, em.apellido2, of.nombre
+FROM empleado AS em
+LEFT JOIN cliente AS cl ON em.id = cl.id_empleado_rep_ventas
+LEFT JOIN oficina AS of ON of.id = em.id_oficina
+WHERE cl.id_empleado_rep_ventas IS NULL;
+
++----+--------+-----------+-----------+----------------+
+| id | nombre | apellido1 | apellido2 | nombre         |
++----+--------+-----------+-----------+----------------+
+|  4 | Sophie | Leclerc   | NULL      | Oficina París  |
+|  5 | Hans   | Müller    | NULL      | Oficina Múnich |
+|  6 | Anna   | Schmidt   | NULL      | Oficina Múnich |
++----+--------+-----------+-----------+----------------+
+```
+
+7. #### Devuelve un listado que muestre los empleados que no tienen una oficina asociada y los que no tienen un cliente asociado.
+
+```sql
+SELECT em.id, em.nombre, em.apellido1, em.apellido2, of.nombre
+FROM empleado AS em
+LEFT JOIN cliente AS cl ON em.id = cl.id_empleado_rep_ventas
+LEFT JOIN oficina AS of ON of.id = em.id_oficina
+WHERE cl.id_empleado_rep_ventas IS NULL AND em.id_oficina IS NULL;
+```
+
+8. #### Devuelve un listado de los productos que nunca han aparecido en un pedido.
+
+```sql
+SELECT p.nombre
+FROM producto AS p
+LEFT JOIN detalle_pedido as dp ON p.id = dp.id_producto
+WHERE dp.id_producto IS NULL;
+```
+
+9. #### Devuelve un listado de los productos que nunca han aparecido en un pedido. El resultado debe mostrar el nombre, la descripción y la imagen del
+producto.
+
+```sql
+SELECT p.nombre, gp.descripcion_texto, gp.imagen
+FROM producto AS p
+LEFT JOIN detalle_pedido AS dp ON p.id = dp.id_producto
+LEFT JOIN gama_producto AS gp ON gp.id = p.id_gama_producto
+WHERE dp.id_producto IS NULL;
+
+```
+
+10. #### Devuelve las oficinas donde no trabajan ninguno de los empleados que hayan sido los representantes de ventas de algún cliente que haya realizado
+la compra de algún producto de la gama Frutales.
+
+```sql
+SELECT DISTINCT ofi.id, ofi.nombre
+FROM oficina AS ofi
+LEFT JOIN empleado AS em ON ofi.id = em.id_oficina
+WHERE em.id IN (
+    SELECT DISTINCT cl.id_empleado_rep_ventas
+    FROM cliente AS cl
+    INNER JOIN forma_pago_cliente AS fpc ON cl.id = fpc.id_cliente
+    INNER JOIN pago_pedido AS pp ON fpc.id = pp.id_forma_pago_cliente
+    INNER JOIN pedido AS p ON pp.id_pedido = p.id
+    INNER JOIN detalle_pedido AS dp ON p.id = dp.id_pedido
+    INNER JOIN producto AS pro ON dp.id_producto = pro.id
+    INNER JOIN gama_producto AS gp ON pro.id_gama_producto = gp.id
+    WHERE gp.descripcion_texto = 'Frutales'
+);
+
+```
+
+11. #### Devuelve un listado con los clientes que han realizado algún pedido pero no han realizado ningún pago.
+
+```sql
+SELECT DISTINCT cl.id, cl.nombre
+FROM cliente AS cl
+INNER JOIN pedido AS p ON cl.id = p.id_cliente
+LEFT JOIN pago_pedido AS pp ON p.id = pp.id_pedido
+WHERE pp.id_pedido IS NULL;
+```
+
+12. #### Devuelve un listado con los datos de los empleados que no tienen clientes asociados y el nombre de su jefe asociado.
+
+```sql
+SELECT em.id, em.nombre, em.apellido1, em.apellido2, em.id_jefe, j.nombre AS nombre_jefe, j.apellido1 AS apellido1_jefe, j.apellido2 AS apellido2_jefe
+FROM empleado AS em
+LEFT JOIN cliente AS c ON em.id = c.id_empleado_rep_ventas
+INNER JOIN empleado AS j ON em.id_jefe = j.id
+WHERE c.id_empleado_rep_ventas IS NULL;
+
++----+--------+-----------+-----------+---------+-------------+----------------+----------------+
+| id | nombre | apellido1 | apellido2 | id_jefe | nombre_jefe | apellido1_jefe | apellido2_jefe |
++----+--------+-----------+-----------+---------+-------------+----------------+----------------+
+|  4 | Sophie | Leclerc   | NULL      |       3 | Pierre      | Dubois         | NULL           |
+|  5 | Hans   | Müller    | NULL      |       1 | Juan        | García         | Pérez          |
+|  6 | Anna   | Schmidt   | NULL      |       5 | Hans        | Müller         | NULL           |
++----+--------+-----------+-----------+---------+-------------+----------------+----------------+
+```
+
